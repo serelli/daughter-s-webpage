@@ -62,19 +62,27 @@ export function NavBar() {
               {link.label}
             </button>
           ))}
-          <button
-            onClick={() => scrollToSection("#ai-widget")}
-            className="flex items-center gap-1.5 text-sm font-semibold px-3 py-1.5 rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
-          >
-            ✨ Try AI
-          </button>
-          <Link
-            href="/puzzle"
-            className="flex items-center gap-1.5 text-sm font-semibold px-3 py-1.5 rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
-          >
-            <Puzzle className="w-4 h-4" />
-            Play Game
-          </Link>
+          <div className="flex items-center gap-1 bg-muted/60 rounded-full p-1">
+            <button
+              onClick={() => window.dispatchEvent(new CustomEvent("say-hello-open"))}
+              className="flex items-center gap-1.5 text-sm font-semibold px-3 py-1.5 rounded-full hover:bg-primary/20 hover:text-primary text-muted-foreground transition-colors"
+            >
+              👋 Say Hello
+            </button>
+            <button
+              onClick={() => scrollToSection("#ai-widget")}
+              className="flex items-center gap-1.5 text-sm font-semibold px-3 py-1.5 rounded-full hover:bg-primary/20 hover:text-primary text-muted-foreground transition-colors"
+            >
+              ✨ Try AI
+            </button>
+            <Link
+              href="/puzzle"
+              className="flex items-center gap-1.5 text-sm font-semibold px-3 py-1.5 rounded-full bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
+            >
+              <Puzzle className="w-4 h-4" />
+              Play Game
+            </Link>
+          </div>
         </div>
 
         {/* Dark mode toggle + hamburger */}
@@ -110,20 +118,28 @@ export function NavBar() {
               {link.label}
             </button>
           ))}
-          <button
-            onClick={() => scrollToSection("#ai-widget")}
-            className="flex items-center gap-2 text-sm font-semibold text-primary py-2"
-          >
-            ✨ Try AI
-          </button>
-          <Link
-            href="/puzzle"
-            onClick={() => setMenuOpen(false)}
-            className="flex items-center gap-2 text-sm font-semibold text-primary py-2"
-          >
-            <Puzzle className="w-4 h-4" />
-            Play Game 🧩
-          </Link>
+          <div className="pt-2 flex flex-col gap-1">
+            <button
+              onClick={() => { setMenuOpen(false); window.dispatchEvent(new CustomEvent("say-hello-open")) }}
+              className="flex items-center gap-2 text-sm font-semibold text-primary py-2"
+            >
+              👋 Say Hello
+            </button>
+            <button
+              onClick={() => scrollToSection("#ai-widget")}
+              className="flex items-center gap-2 text-sm font-semibold text-primary py-2"
+            >
+              ✨ Try AI
+            </button>
+            <Link
+              href="/puzzle"
+              onClick={() => setMenuOpen(false)}
+              className="flex items-center gap-2 text-sm font-semibold text-primary py-2"
+            >
+              <Puzzle className="w-4 h-4" />
+              Play Game 🧩
+            </Link>
+          </div>
         </div>
       )}
     </nav>

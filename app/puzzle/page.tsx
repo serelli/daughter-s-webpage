@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react"
 import Link from "next/link"
-import { ArrowLeft, RotateCcw, Trophy, Timer, Star } from "lucide-react"
+import { ArrowLeft, RotateCcw, Trophy, Timer, Star, Send, Medal } from "lucide-react"
 
 const EMOJI_SETS = {
   easy: ["🐶", "🐱", "🐭", "🐹", "🐰", "🦊"],
@@ -11,12 +11,21 @@ const EMOJI_SETS = {
 }
 
 type Difficulty = "easy" | "medium" | "hard"
+type Tab = "game" | "leaderboard"
 
 interface Card {
   id: number
   emoji: string
   flipped: boolean
   matched: boolean
+}
+
+interface ScoreEntry {
+  id: string
+  name: string
+  moves: number
+  seconds: number
+  date: string
 }
 
 function shuffle<T>(arr: T[]): T[] {
@@ -52,7 +61,11 @@ const GRID_SIZE: Record<Difficulty, string> = {
   hard: "max-w-md",
 }
 
+const MEDAL_COLORS = ["text-amber-400", "text-slate-400", "text-amber-600"]
+const MEDAL_LABELS = ["🥇", "🥈", "🥉"]
+
 export default function PuzzlePage() {
+  const [tab, setTab] = useState<Tab>("game")
   const [difficulty, setDifficulty] = useState<Difficulty>("easy")
   const [cards, setCards] = useState<Card[]>(() => makeCards("easy"))
   const [selected, setSelected] = useState<number[]>([])
@@ -63,6 +76,35 @@ export default function PuzzlePage() {
   const [bestMoves, setBestMoves] = useState<Record<Difficulty, number | null>>({
     easy: null, medium: null, hard: null,
   })
+
+  // Score submission
+  const [playerName, setPlayerName] = useState("")
+  const [submitState, setSubmitState] = useState<"idle" | "sending" | "done" | "error">("idle")
+
+  // Leaderboard
+  const [scores, setScores] = useState<ScoreEntry[]>([])
+  const [scoresLoading, setScoresLoading] = useState(false)
+  const [scoresError, setScoresError] = useState("")
+
+  const fetchScores = useCallback(async (diff: Difficulty) => {
+    setScoresLoading(true)
+    setScoresError("")
+    try {
+      const res = await fetch(`/api/puzzle/scores?difficulty=${diff}`)
+      const data = await res.json()
+      if (data.error && !data.scores?.length) {
+        setScoresError(data.error)
+        setScores([])
+      } else {
+        setScores(data.scores ?? [])
+      }
+    } catch {
+      setScoresError("Could not load leaderboard.")
+      setScores([])
+    } finally {
+      setScoresLoading(false)
+    }
+  }, [])
 
   // Timer
   useEffect(() => {
@@ -83,6 +125,11 @@ export default function PuzzlePage() {
     }
   }, [cards, difficulty, moves])
 
+  // Fetch leaderboard when tab switches or difficulty changes
+  useEffect(() => {
+    if (tab === "leaderboard") fetchScores(difficulty)
+  }, [tab, difficulty, fetchScores])
+
   const reset = useCallback((diff: Difficulty = difficulty) => {
     setCards(makeCards(diff))
     setSelected([])
@@ -90,6 +137,8 @@ export default function PuzzlePage() {
     setSeconds(0)
     setRunning(false)
     setWon(false)
+    setSubmitState("idle")
+    setPlayerName("")
   }, [difficulty])
 
   const changeDifficulty = (diff: Difficulty) => {
@@ -113,13 +162,11 @@ export default function PuzzlePage() {
       setMoves((m) => m + 1)
       const [a, b] = next.map((idx) => cards.find((c) => c.id === idx)!)
       if (a.emoji === b.emoji) {
-        // match
         setTimeout(() => {
           setCards((prev) => prev.map((c) => next.includes(c.id) ? { ...c, matched: true } : c))
           setSelected([])
         }, 400)
       } else {
-        // no match — flip back
         setTimeout(() => {
           setCards((prev) => prev.map((c) => next.includes(c.id) ? { ...c, flipped: false } : c))
           setSelected([])
@@ -128,12 +175,28 @@ export default function PuzzlePage() {
     }
   }
 
+  const submitScore = async () => {
+    if (!playerName.trim()) return
+    setSubmitState("sending")
+    try {
+      const res = await fetch("/api/puzzle/scores", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: playerName.trim(), moves, seconds, difficulty }),
+      })
+      if (!res.ok) throw new Error()
+      setSubmitState("done")
+      // Refresh leaderboard if visible
+      if (tab === "leaderboard") fetchScores(difficulty)
+    } catch {
+      setSubmitState("error")
+    }
+  }
+
   const stars =
     won
-      ? moves <= EMOJI_SETS[difficulty].length + 2
-        ? 3
-        : moves <= EMOJI_SETS[difficulty].length * 2
-        ? 2
+      ? moves <= EMOJI_SETS[difficulty].length + 2 ? 3
+        : moves <= EMOJI_SETS[difficulty].length * 2 ? 2
         : 1
       : 0
 
@@ -148,13 +211,33 @@ export default function PuzzlePage() {
           <ArrowLeft className="w-4 h-4" />
           Back
         </Link>
-        <span className="text-primary font-bold text-base flex-1 text-center pr-16">
-          🧩 Memory Match
-        </span>
+        <div className="flex-1 flex justify-center gap-1 pr-16">
+          <button
+            onClick={() => setTab("game")}
+            className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-all ${
+              tab === "game"
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:text-primary"
+            }`}
+          >
+            🎮 Game
+          </button>
+          <button
+            onClick={() => setTab("leaderboard")}
+            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-semibold transition-all ${
+              tab === "leaderboard"
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:text-primary"
+            }`}
+          >
+            <Trophy className="w-3.5 h-3.5" />
+            Leaderboard
+          </button>
+        </div>
       </header>
 
       <main className="flex-1 flex flex-col items-center px-4 py-6 gap-6">
-        {/* Difficulty */}
+        {/* Difficulty (shared between tabs) */}
         <div className="flex gap-2">
           {(["easy", "medium", "hard"] as Difficulty[]).map((d) => (
             <button
@@ -171,69 +254,131 @@ export default function PuzzlePage() {
           ))}
         </div>
 
-        {/* Stats */}
-        <div className="flex gap-6 text-sm font-medium">
-          <span className="flex items-center gap-1.5 text-muted-foreground">
-            <Timer className="w-4 h-4 text-primary" />
-            {formatTime(seconds)}
-          </span>
-          <span className="flex items-center gap-1.5 text-muted-foreground">
-            🎯 {moves} move{moves !== 1 ? "s" : ""}
-          </span>
-          {bestMoves[difficulty] !== null && (
-            <span className="flex items-center gap-1.5 text-amber-500">
-              <Trophy className="w-4 h-4" />
-              Best: {bestMoves[difficulty]}
-            </span>
-          )}
-        </div>
+        {tab === "game" ? (
+          <>
+            {/* Stats */}
+            <div className="flex gap-6 text-sm font-medium">
+              <span className="flex items-center gap-1.5 text-muted-foreground">
+                <Timer className="w-4 h-4 text-primary" />
+                {formatTime(seconds)}
+              </span>
+              <span className="flex items-center gap-1.5 text-muted-foreground">
+                🎯 {moves} move{moves !== 1 ? "s" : ""}
+              </span>
+              {bestMoves[difficulty] !== null && (
+                <span className="flex items-center gap-1.5 text-amber-500">
+                  <Trophy className="w-4 h-4" />
+                  Best: {bestMoves[difficulty]}
+                </span>
+              )}
+            </div>
 
-        {/* Grid */}
-        <div className={`w-full ${GRID_SIZE[difficulty]} mx-auto`}>
-          <div className={`grid ${COLS[difficulty]} gap-2`}>
-            {cards.map((card) => (
-              <button
-                key={card.id}
-                onClick={() => handleFlip(card.id)}
-                disabled={card.matched || card.flipped || selected.length === 2}
-                className="aspect-square rounded-xl text-2xl sm:text-3xl flex items-center justify-center
-                  transition-all duration-300 select-none outline-none focus-visible:ring-2 focus-visible:ring-primary
-                  hover:scale-105 active:scale-95 disabled:cursor-default"
-                style={{
-                  background: card.matched
-                    ? "oklch(0.85 0.15 145)"
-                    : card.flipped
-                    ? "oklch(0.75 0.18 280)"
-                    : "oklch(0.65 0.18 280)",
-                  boxShadow: card.matched
-                    ? "0 0 0 2px oklch(0.65 0.2 145)"
-                    : card.flipped
-                    ? "0 4px 12px oklch(0.5 0.2 280 / 0.4)"
-                    : "0 2px 8px oklch(0.3 0.1 280 / 0.3)",
-                  transform: card.flipped || card.matched ? "rotateY(0deg)" : "rotateY(180deg)",
-                }}
-                aria-label={card.flipped || card.matched ? card.emoji : "Hidden card"}
-              >
-                {card.flipped || card.matched ? card.emoji : "❓"}
-              </button>
-            ))}
+            {/* Grid */}
+            <div className={`w-full ${GRID_SIZE[difficulty]} mx-auto`}>
+              <div className={`grid ${COLS[difficulty]} gap-2`}>
+                {cards.map((card) => (
+                  <button
+                    key={card.id}
+                    onClick={() => handleFlip(card.id)}
+                    disabled={card.matched || card.flipped || selected.length === 2}
+                    className="aspect-square rounded-xl text-2xl sm:text-3xl flex items-center justify-center
+                      transition-all duration-300 select-none outline-none focus-visible:ring-2 focus-visible:ring-primary
+                      hover:scale-105 active:scale-95 disabled:cursor-default"
+                    style={{
+                      background: card.matched
+                        ? "oklch(0.85 0.15 145)"
+                        : card.flipped
+                        ? "oklch(0.75 0.18 280)"
+                        : "oklch(0.65 0.18 280)",
+                      boxShadow: card.matched
+                        ? "0 0 0 2px oklch(0.65 0.2 145)"
+                        : card.flipped
+                        ? "0 4px 12px oklch(0.5 0.2 280 / 0.4)"
+                        : "0 2px 8px oklch(0.3 0.1 280 / 0.3)",
+                    }}
+                    aria-label={card.flipped || card.matched ? card.emoji : "Hidden card"}
+                  >
+                    {card.flipped || card.matched ? card.emoji : "❓"}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <button
+              onClick={() => reset(difficulty)}
+              className="flex items-center gap-2 px-5 py-2 rounded-full bg-muted hover:bg-primary/20 text-muted-foreground hover:text-primary text-sm font-medium transition-all"
+            >
+              <RotateCcw className="w-4 h-4" />
+              New Game
+            </button>
+
+            <div className="max-w-sm text-center text-xs text-muted-foreground bg-muted/40 rounded-2xl px-5 py-3 leading-relaxed">
+              <p className="font-semibold text-foreground mb-1">How to Play 🎮</p>
+              Flip two cards at a time. Find matching animal pairs to clear the board. Fewer moves = more stars! ⭐
+            </div>
+          </>
+        ) : (
+          /* Leaderboard tab */
+          <div className="w-full max-w-md">
+            <div className="bg-card rounded-3xl border-2 border-border/50 shadow-xl overflow-hidden">
+              <div className="bg-primary/10 px-6 py-5 border-b border-border/30 flex items-center gap-3">
+                <Medal className="w-6 h-6 text-primary" />
+                <div>
+                  <h2 className="font-bold text-foreground text-lg">Top Players</h2>
+                  <p className="text-xs text-muted-foreground capitalize">{difficulty} mode · fewest moves wins</p>
+                </div>
+              </div>
+
+              <div className="divide-y divide-border/30">
+                {scoresLoading ? (
+                  <div className="flex items-center justify-center gap-2 py-12 text-muted-foreground">
+                    <span>Loading</span>
+                    {[0, 1, 2].map((i) => (
+                      <span key={i} className="w-1.5 h-1.5 rounded-full bg-primary animate-bounce"
+                        style={{ animationDelay: `${i * 0.15}s` }} />
+                    ))}
+                  </div>
+                ) : scoresError ? (
+                  <div className="py-12 text-center text-sm text-muted-foreground px-6">
+                    <p className="text-3xl mb-3">🔌</p>
+                    <p>{scoresError}</p>
+                    <p className="text-xs mt-1 opacity-60">Make sure KV_REST_API_URL and KV_REST_API_TOKEN are set in Vercel.</p>
+                  </div>
+                ) : scores.length === 0 ? (
+                  <div className="py-12 text-center text-muted-foreground">
+                    <p className="text-4xl mb-3">🏆</p>
+                    <p className="font-medium">No scores yet!</p>
+                    <p className="text-sm mt-1">Be the first to finish and submit your score.</p>
+                  </div>
+                ) : (
+                  scores.map((entry, i) => (
+                    <div key={entry.id} className="flex items-center gap-4 px-6 py-4">
+                      <span className="text-xl w-6 text-center flex-shrink-0">
+                        {i < 3 ? MEDAL_LABELS[i] : <span className="text-sm text-muted-foreground font-bold">{i + 1}</span>}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className={`font-semibold truncate ${i === 0 ? "text-amber-500" : "text-foreground"}`}>
+                          {entry.name}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(entry.date).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                        </p>
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <p className="font-bold text-primary">{entry.moves} moves</p>
+                        <p className="text-xs text-muted-foreground">{formatTime(entry.seconds)}</p>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            <p className="text-center text-xs text-muted-foreground mt-4">
+              Play the game and submit your score to appear here!
+            </p>
           </div>
-        </div>
-
-        {/* Reset */}
-        <button
-          onClick={() => reset(difficulty)}
-          className="flex items-center gap-2 px-5 py-2 rounded-full bg-muted hover:bg-primary/20 text-muted-foreground hover:text-primary text-sm font-medium transition-all"
-        >
-          <RotateCcw className="w-4 h-4" />
-          New Game
-        </button>
-
-        {/* How to play */}
-        <div className="max-w-sm text-center text-xs text-muted-foreground bg-muted/40 rounded-2xl px-5 py-3 leading-relaxed">
-          <p className="font-semibold text-foreground mb-1">How to Play 🎮</p>
-          Flip two cards at a time. Find matching animal pairs to clear the board. Fewer moves = more stars! ⭐
-        </div>
+        )}
       </main>
 
       {/* Win overlay */}
@@ -244,28 +389,67 @@ export default function PuzzlePage() {
             <h2 className="text-2xl font-bold text-primary">You Won!</h2>
             <div className="flex gap-1">
               {[1, 2, 3].map((n) => (
-                <Star
-                  key={n}
-                  className={`w-8 h-8 ${n <= stars ? "text-amber-400 fill-amber-400" : "text-muted"}`}
-                />
+                <Star key={n} className={`w-8 h-8 ${n <= stars ? "text-amber-400 fill-amber-400" : "text-muted"}`} />
               ))}
             </div>
             <p className="text-muted-foreground text-sm">
               {moves} moves &bull; {formatTime(seconds)}
             </p>
-            <div className="flex gap-3 mt-2">
+
+            {/* Score submission */}
+            {submitState === "done" ? (
+              <div className="w-full bg-primary/10 rounded-2xl py-3 px-4 text-sm text-primary font-medium text-center">
+                ✅ Score saved to leaderboard!
+              </div>
+            ) : (
+              <div className="w-full flex flex-col gap-2">
+                <p className="text-sm font-medium text-foreground">Save your score to the leaderboard?</p>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={playerName}
+                    onChange={(e) => setPlayerName(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && submitScore()}
+                    placeholder="Your name"
+                    maxLength={30}
+                    disabled={submitState === "sending"}
+                    className="flex-1 px-3 py-2 rounded-xl border-2 border-border bg-background text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:border-primary transition-colors"
+                  />
+                  <button
+                    onClick={submitScore}
+                    disabled={!playerName.trim() || submitState === "sending"}
+                    className="px-4 py-2 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition-opacity disabled:opacity-50"
+                  >
+                    {submitState === "sending" ? "..." : <Send className="w-4 h-4" />}
+                  </button>
+                </div>
+                {submitState === "error" && (
+                  <p className="text-xs text-destructive text-center">Could not save — try again.</p>
+                )}
+              </div>
+            )}
+
+            <div className="flex gap-3 mt-1 w-full">
               <button
                 onClick={() => reset(difficulty)}
-                className="px-5 py-2 rounded-full bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity"
+                className="flex-1 px-5 py-2 rounded-full bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity text-sm"
               >
                 Play Again
               </button>
-              {difficulty !== "hard" && (
+              {difficulty !== "hard" ? (
                 <button
                   onClick={() => changeDifficulty(difficulty === "easy" ? "medium" : "hard")}
-                  className="px-5 py-2 rounded-full bg-muted text-foreground font-semibold hover:bg-primary/20 transition-colors"
+                  className="flex-1 px-5 py-2 rounded-full bg-muted text-foreground font-semibold hover:bg-primary/20 transition-colors text-sm"
                 >
                   Next Level →
+                </button>
+              ) : (
+                <button
+                  onClick={() => { setTab("leaderboard"); setWon(false) }}
+                  className="flex-1 px-5 py-2 rounded-full bg-muted text-foreground font-semibold hover:bg-primary/20 transition-colors text-sm"
+                >
+                  <Trophy className="w-4 h-4 inline mr-1" />
+                  Scores
                 </button>
               )}
             </div>

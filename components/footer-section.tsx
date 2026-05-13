@@ -1,10 +1,14 @@
 "use client"
 
-import { Heart, Star } from "lucide-react"
+import { Heart, Star, ArrowUp } from "lucide-react"
 
 export function FooterSection() {
+  const scrollToTop = () => {
+    document.querySelector("#hero")?.scrollIntoView({ behavior: "smooth" })
+  }
+
   return (
-    <footer className="py-12 px-4 bg-primary/10">
+    <footer className="py-12 px-4 bg-primary/10 relative">
       <div className="max-w-4xl mx-auto text-center">
         <div className="flex items-center justify-center gap-2 mb-4">
           <Star className="w-6 h-6 text-accent fill-accent" />
@@ -31,7 +35,20 @@ export function FooterSection() {
             </span>
           ))}
         </div>
+
+        <p className="mt-6 text-sm text-muted-foreground">
+          © {new Date().getFullYear()} Drishya Erelli
+        </p>
       </div>
+
+      {/* Back to top */}
+      <button
+        onClick={scrollToTop}
+        className="absolute right-6 top-1/2 -translate-y-1/2 bg-primary text-primary-foreground p-3 rounded-full shadow-lg hover:scale-110 transition-transform"
+        aria-label="Back to top"
+      >
+        <ArrowUp className="w-5 h-5" />
+      </button>
     </footer>
   )
 }

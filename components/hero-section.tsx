@@ -18,8 +18,12 @@ export function HeroSection() {
     setStars(newStars)
   }, [])
 
+  const scrollTo = (id: string) => {
+    document.querySelector(id)?.scrollIntoView({ behavior: "smooth" })
+  }
+
   return (
-    <section className="relative min-h-[80vh] flex flex-col items-center justify-center overflow-hidden px-4">
+    <section className="relative min-h-[100vh] flex flex-col items-center justify-center overflow-hidden px-4 pt-16">
       {/* Floating stars */}
       {stars.map((star) => (
         <Star
@@ -71,11 +75,17 @@ export function HeroSection() {
         </p>
 
         <div className="mt-8 flex flex-wrap gap-4 justify-center">
-          <button className="bg-primary text-primary-foreground px-8 py-4 rounded-full text-lg font-semibold hover:scale-105 transition-transform shadow-lg">
+          <button
+            onClick={() => scrollTo("#about")}
+            className="bg-primary text-primary-foreground px-8 py-4 rounded-full text-lg font-semibold hover:scale-105 transition-transform shadow-lg"
+          >
             {"Let's Explore!"}
           </button>
-          <button className="bg-secondary text-secondary-foreground px-8 py-4 rounded-full text-lg font-semibold hover:scale-105 transition-transform shadow-lg border-2 border-secondary-foreground/20">
-            Say Hello
+          <button
+            onClick={() => scrollTo("#gallery")}
+            className="bg-secondary text-secondary-foreground px-8 py-4 rounded-full text-lg font-semibold hover:scale-105 transition-transform shadow-lg border-2 border-secondary-foreground/20"
+          >
+            See Gallery
           </button>
         </div>
       </div>

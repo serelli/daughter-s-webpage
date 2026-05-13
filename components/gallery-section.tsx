@@ -1,6 +1,7 @@
 "use client"
 
-import { Camera, ImageIcon } from "lucide-react"
+import { useState, useEffect } from "react"
+import { Camera, ImageIcon, X, ChevronLeft, ChevronRight } from "lucide-react"
 import Image from "next/image"
 
 interface GalleryItem {
@@ -22,7 +23,27 @@ const galleryItems: GalleryItem[] = [
   { type: "image", label: "Crafty Sisters", bg: "bg-secondary/30", src: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/IMG_5742-HL0eQvV8jvbcyZ4SGJBAbMX4Bcimqf.jpeg" },
 ]
 
+const imageItems = galleryItems.filter((i) => i.type === "image" && i.src)
+
 export function GallerySection() {
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
+
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (lightboxIndex === null) return
+      if (e.key === "Escape") setLightboxIndex(null)
+      if (e.key === "ArrowRight") setLightboxIndex((i) => (i! + 1) % imageItems.length)
+      if (e.key === "ArrowLeft") setLightboxIndex((i) => (i! - 1 + imageItems.length) % imageItems.length)
+    }
+    window.addEventListener("keydown", handleKey)
+    return () => window.removeEventListener("keydown", handleKey)
+  }, [lightboxIndex])
+
+  useEffect(() => {
+    document.body.style.overflow = lightboxIndex !== null ? "hidden" : ""
+    return () => { document.body.style.overflow = "" }
+  }, [lightboxIndex])
+
   return (
     <section className="py-16 md:py-24 px-4">
       <div className="max-w-6xl mx-auto">
@@ -35,7 +56,7 @@ export function GallerySection() {
             <ImageIcon className="w-8 h-8 text-primary" />
           </div>
           <p className="text-lg md:text-xl text-muted-foreground max-w-xl mx-auto">
-            Memories of my favorite moments!
+            Memories of my favorite moments! Click a photo to zoom in ✨
           </p>
         </div>
 
@@ -43,6 +64,7 @@ export function GallerySection() {
           {galleryItems.map((item, index) => (
             <div
               key={index}
+              onClick={() => item.type === "image" && item.src ? setLightboxIndex(imageItems.indexOf(item)) : null}
               className={`${item.bg} rounded-3xl aspect-square flex flex-col items-center justify-center hover:scale-105 transition-transform cursor-pointer shadow-lg border-4 border-white/50 overflow-hidden relative group`}
             >
               {item.type === "image" && item.src ? (
@@ -73,6 +95,52 @@ export function GallerySection() {
           </div>
         </div>
       </div>
+
+      {/* Lightbox */}
+      {lightboxIndex !== null && (
+        <div
+          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
+          onClick={() => setLightboxIndex(null)}
+        >
+          <button
+            onClick={() => setLightboxIndex(null)}
+            className="absolute top-4 right-4 text-white/80 hover:text-white bg-white/10 hover:bg-white/20 rounded-full p-2 transition-colors"
+          >
+            <X className="w-6 h-6" />
+          </button>
+
+          <button
+            onClick={(e) => { e.stopPropagation(); setLightboxIndex((lightboxIndex - 1 + imageItems.length) % imageItems.length) }}
+            className="absolute left-4 text-white/80 hover:text-white bg-white/10 hover:bg-white/20 rounded-full p-3 transition-colors"
+          >
+            <ChevronLeft className="w-6 h-6" />
+          </button>
+
+          <div
+            className="relative max-w-4xl w-full max-h-[85vh] rounded-2xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Image
+              src={imageItems[lightboxIndex].src!}
+              alt={imageItems[lightboxIndex].label}
+              width={1200}
+              height={900}
+              className="object-contain w-full h-full max-h-[85vh]"
+            />
+            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent py-4 px-6">
+              <p className="text-white font-semibold text-lg text-center">{imageItems[lightboxIndex].label}</p>
+              <p className="text-white/60 text-sm text-center">{lightboxIndex + 1} / {imageItems.length}</p>
+            </div>
+          </div>
+
+          <button
+            onClick={(e) => { e.stopPropagation(); setLightboxIndex((lightboxIndex + 1) % imageItems.length) }}
+            className="absolute right-4 text-white/80 hover:text-white bg-white/10 hover:bg-white/20 rounded-full p-3 transition-colors"
+          >
+            <ChevronRight className="w-6 h-6" />
+          </button>
+        </div>
+      )}
     </section>
   )
 }

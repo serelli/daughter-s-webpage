@@ -82,10 +82,16 @@ export function HeroSection() {
             {"Let's Explore!"}
           </button>
           <button
-            onClick={() => scrollTo("#gallery")}
+            onClick={() => window.dispatchEvent(new CustomEvent("say-hello-open"))}
             className="bg-secondary text-secondary-foreground px-8 py-4 rounded-full text-lg font-semibold hover:scale-105 transition-transform shadow-lg border-2 border-secondary-foreground/20"
           >
-            See Gallery
+            Say Hello 👋
+          </button>
+          <button
+            onClick={() => scrollTo("#ai-widget")}
+            className="bg-accent text-accent-foreground px-8 py-4 rounded-full text-lg font-semibold hover:scale-105 transition-transform shadow-lg"
+          >
+            ✨ Try AI
           </button>
         </div>
       </div>

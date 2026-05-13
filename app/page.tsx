@@ -7,6 +7,8 @@ import { GallerySection } from "@/components/gallery-section"
 import { FunFactsSection } from "@/components/fun-facts-section"
 import { AiWidget } from "@/components/ai-widget"
 import { AiFloatButton } from "@/components/ai-float-button"
+import { SayHelloModal } from "@/components/say-hello-modal"
+import { MessagesWall } from "@/components/messages-wall"
 import { FooterSection } from "@/components/footer-section"
 import { ScrollReveal } from "@/components/scroll-reveal"
 
@@ -21,8 +23,10 @@ export default function HomePage() {
       <ScrollReveal><div id="gallery"><GallerySection /></div></ScrollReveal>
       <ScrollReveal><div id="fun-facts"><FunFactsSection /></div></ScrollReveal>
       <ScrollReveal><div id="ai-widget"><AiWidget /></div></ScrollReveal>
+      <ScrollReveal><MessagesWall /></ScrollReveal>
       <FooterSection />
       <AiFloatButton />
+      <SayHelloModal />
     </main>
   )
 }

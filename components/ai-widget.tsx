@@ -162,7 +162,7 @@ export function AiWidget() {
             {(state === "streaming" || state === "done") && (
               <div className="flex items-center justify-between mt-6 pt-4 border-t border-border/30">
                 <span className="text-xs text-muted-foreground">
-                  {mode === "fun-fact" ? "🌟 Fun Fact" : "📖 Story"} · Made by Sandeep Erelli
+                  {mode === "fun-fact" ? "🌟 Fun Fact" : "📖 Story"} · Powered by Claude AI
                 </span>
                 <div className="flex gap-2">
                   {state === "streaming" ? (

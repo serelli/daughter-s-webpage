@@ -153,7 +153,7 @@ export default function AdminPage() {
 
         {kvError && (
           <div className="mb-6 bg-destructive/10 border border-destructive/30 text-destructive rounded-2xl px-5 py-4 text-sm">
-            <strong>KV not configured:</strong> {kvError}. Go to Vercel → Storage → Create KV database and link it to this project.
+            <strong>KV not configured:</strong> {kvError}. Add KV_REST_API_URL and KV_REST_API_TOKEN to your Vercel environment variables.
           </div>
         )}
 

@@ -8,32 +8,34 @@ function checkAuth(req: NextRequest) {
   return true
 }
 
-async function getKv() {
-  if (!process.env.KV_REST_API_URL || !process.env.KV_REST_API_TOKEN) return null
-  const { kv } = await import("@vercel/kv")
-  return kv
+function getRedis() {
+  if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) return null
+  const { Redis } = require("@upstash/redis")
+  return new Redis({
+    url: process.env.UPSTASH_REDIS_REST_URL,
+    token: process.env.UPSTASH_REDIS_REST_TOKEN,
+  })
 }
 
-// GET — fetch all pending messages
 export async function GET(req: NextRequest) {
   if (!checkAuth(req)) {
     return Response.json({ error: "Unauthorized" }, { status: 401 })
   }
 
   try {
-    const kv = await getKv()
-    if (!kv) return Response.json({ error: "KV not configured", messages: [] })
+    const redis = getRedis()
+    if (!redis) return Response.json({ error: "Redis not configured", messages: [] })
 
-    const ids: string[] = await kv.smembers("hellos:pending")
+    const ids: string[] = await redis.smembers("hellos:pending")
     if (!ids || ids.length === 0) return Response.json({ messages: [] })
 
     const entries = await Promise.all(
-      ids.map((id) => kv.hgetall<HelloEntry>(`hello:${id}`))
+      ids.map((id: string) => redis.hgetall(`hello:${id}`))
     )
 
     const messages = entries
       .filter(Boolean)
-      .sort((a, b) => new Date(b!.date).getTime() - new Date(a!.date).getTime())
+      .sort((a: HelloEntry, b: HelloEntry) => new Date(b.date).getTime() - new Date(a.date).getTime())
 
     return Response.json({ messages })
   } catch (e) {
@@ -41,7 +43,6 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// POST — approve or reject a message
 export async function POST(req: NextRequest) {
   if (!checkAuth(req)) {
     return Response.json({ error: "Unauthorized" }, { status: 401 })
@@ -53,16 +54,16 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const kv = await getKv()
-    if (!kv) return Response.json({ error: "KV not configured" }, { status: 500 })
+    const redis = getRedis()
+    if (!redis) return Response.json({ error: "Redis not configured" }, { status: 500 })
 
-    await kv.srem("hellos:pending", id)
+    await redis.srem("hellos:pending", id)
 
     if (action === "approve") {
-      await kv.hset(`hello:${id}`, { status: "approved" })
-      await kv.sadd("hellos:approved", id)
+      await redis.hset(`hello:${id}`, { status: "approved" })
+      await redis.sadd("hellos:approved", id)
     } else {
-      await kv.del(`hello:${id}`)
+      await redis.del(`hello:${id}`)
     }
 
     return Response.json({ success: true })

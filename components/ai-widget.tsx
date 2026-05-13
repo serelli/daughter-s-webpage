@@ -31,23 +31,34 @@ export function AiWidget() {
         signal: controller.signal,
       })
 
-      if (!res.ok || !res.body) throw new Error("Request failed")
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.error ?? "Request failed")
+      }
+
+      if (!res.body) throw new Error("No response body")
 
       setState("streaming")
       const reader = res.body.getReader()
       const decoder = new TextDecoder()
+      let accumulated = ""
 
       while (true) {
         const { done, value } = await reader.read()
         if (done) break
-        setText((prev) => prev + decoder.decode(value, { stream: true }))
+        const chunk = decoder.decode(value, { stream: true })
+        accumulated += chunk
+        setText((prev) => prev + chunk)
       }
+
+      if (!accumulated) throw new Error("Empty response — please try again.")
 
       setState("done")
     } catch (err: unknown) {
       if (err instanceof Error && err.name === "AbortError") return
+      const msg = err instanceof Error ? err.message : "Something went wrong."
       setState("done")
-      setText("Oops! Something went wrong. Please try again. ✨")
+      setText(`✨ ${msg}`)
     }
   }
 

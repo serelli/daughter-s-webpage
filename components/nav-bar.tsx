@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Sparkles, Moon, Sun, Menu, X } from "lucide-react"
+import Link from "next/link"
+import { Sparkles, Moon, Sun, Menu, X, Puzzle } from "lucide-react"
 import { useTheme } from "next-themes"
 
 const navLinks = [
@@ -61,6 +62,13 @@ export function NavBar() {
               {link.label}
             </button>
           ))}
+          <Link
+            href="/puzzle"
+            className="flex items-center gap-1.5 text-sm font-semibold px-3 py-1.5 rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+          >
+            <Puzzle className="w-4 h-4" />
+            Play Game
+          </Link>
         </div>
 
         {/* Dark mode toggle + hamburger */}
@@ -91,11 +99,19 @@ export function NavBar() {
             <button
               key={link.href}
               onClick={() => scrollToSection(link.href)}
-              className="text-left text-sm font-medium text-muted-foreground hover:text-primary transition-colors py-2 border-b border-border/30 last:border-0"
+              className="text-left text-sm font-medium text-muted-foreground hover:text-primary transition-colors py-2 border-b border-border/30"
             >
               {link.label}
             </button>
           ))}
+          <Link
+            href="/puzzle"
+            onClick={() => setMenuOpen(false)}
+            className="flex items-center gap-2 text-sm font-semibold text-primary py-2"
+          >
+            <Puzzle className="w-4 h-4" />
+            Play Game 🧩
+          </Link>
         </div>
       )}
     </nav>

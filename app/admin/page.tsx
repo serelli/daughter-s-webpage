@@ -28,6 +28,7 @@ export default function AdminPage() {
   const [messages, setMessages] = useState<HelloEntry[]>([])
   const [loading, setLoading] = useState(false)
   const [acting, setActing] = useState<string | null>(null)
+  const [kvError, setKvError] = useState<string | null>(null)
 
   const fetchPending = useCallback(async (pw: string) => {
     setLoading(true)
@@ -37,7 +38,9 @@ export default function AdminPage() {
       })
       if (res.status === 401) { setAuthed(false); return }
       const data = await res.json()
-      setMessages(Array.isArray(data) ? data : [])
+      if (data.error) setKvError(data.error)
+      else setKvError(null)
+      setMessages(Array.isArray(data.messages) ? data.messages : [])
     } finally {
       setLoading(false)
     }
@@ -55,7 +58,8 @@ export default function AdminPage() {
     }
     setAuthed(true)
     const data = await res.json()
-    setMessages(Array.isArray(data) ? data : [])
+    if (data.error) setKvError(data.error)
+    setMessages(Array.isArray(data.messages) ? data.messages : [])
   }
 
   const act = async (id: string, action: "approve" | "reject") => {
@@ -146,6 +150,12 @@ export default function AdminPage() {
             </button>
           </div>
         </div>
+
+        {kvError && (
+          <div className="mb-6 bg-destructive/10 border border-destructive/30 text-destructive rounded-2xl px-5 py-4 text-sm">
+            <strong>KV not configured:</strong> {kvError}. Go to Vercel → Storage → Create KV database and link it to this project.
+          </div>
+        )}
 
         {loading ? (
           <div className="flex items-center justify-center gap-2 py-16 text-muted-foreground">

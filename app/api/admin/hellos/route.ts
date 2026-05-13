@@ -22,10 +22,10 @@ export async function GET(req: NextRequest) {
 
   try {
     const kv = await getKv()
-    if (!kv) return Response.json([])
+    if (!kv) return Response.json({ error: "KV not configured", messages: [] })
 
-    const ids = await kv.smembers<string[]>("hellos:pending")
-    if (!ids || ids.length === 0) return Response.json([])
+    const ids: string[] = await kv.smembers("hellos:pending")
+    if (!ids || ids.length === 0) return Response.json({ messages: [] })
 
     const entries = await Promise.all(
       ids.map((id) => kv.hgetall<HelloEntry>(`hello:${id}`))
@@ -35,9 +35,9 @@ export async function GET(req: NextRequest) {
       .filter(Boolean)
       .sort((a, b) => new Date(b!.date).getTime() - new Date(a!.date).getTime())
 
-    return Response.json(messages)
-  } catch {
-    return Response.json([])
+    return Response.json({ messages })
+  } catch (e) {
+    return Response.json({ error: String(e), messages: [] })
   }
 }
 

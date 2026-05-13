@@ -20,7 +20,7 @@ export async function GET() {
     const kv = await getKv()
     if (!kv) return Response.json([])
 
-    const ids = await kv.smembers<string[]>("hellos:approved")
+    const ids: string[] = await kv.smembers("hellos:approved")
     if (!ids || ids.length === 0) return Response.json([])
 
     const entries = await Promise.all(

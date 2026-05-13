@@ -10,7 +10,7 @@ const _geistMono = Geist_Mono({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "Drishya's Magical World",
   description: "Drishya Erelli's fun and magical webpage",
-  generator: 'v0.app',
+  generator: 'Sandeep Erelli',
   icons: {
     icon: [
       {

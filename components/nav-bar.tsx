@@ -62,6 +62,12 @@ export function NavBar() {
               {link.label}
             </button>
           ))}
+          <button
+            onClick={() => scrollToSection("#ai-widget")}
+            className="flex items-center gap-1.5 text-sm font-semibold px-3 py-1.5 rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+          >
+            ✨ Try AI
+          </button>
           <Link
             href="/puzzle"
             className="flex items-center gap-1.5 text-sm font-semibold px-3 py-1.5 rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
@@ -104,6 +110,12 @@ export function NavBar() {
               {link.label}
             </button>
           ))}
+          <button
+            onClick={() => scrollToSection("#ai-widget")}
+            className="flex items-center gap-2 text-sm font-semibold text-primary py-2"
+          >
+            ✨ Try AI
+          </button>
           <Link
             href="/puzzle"
             onClick={() => setMenuOpen(false)}

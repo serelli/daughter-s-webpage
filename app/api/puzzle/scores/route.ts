@@ -23,6 +23,17 @@ function leaderboardKey(difficulty: Difficulty) {
   return `puzzle:leaderboard:${difficulty}`
 }
 
+function toEntry(m: unknown): ScoreEntry | null {
+  try {
+    // @upstash/redis auto-deserializes JSON, so m may already be an object
+    const obj = typeof m === "string" ? JSON.parse(m) : m
+    if (obj && typeof obj === "object") return obj as ScoreEntry
+    return null
+  } catch {
+    return null
+  }
+}
+
 // GET /api/puzzle/scores?difficulty=easy
 export async function GET(req: NextRequest) {
   const difficulty = req.nextUrl.searchParams.get("difficulty") as Difficulty | null
@@ -36,10 +47,11 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const members: string[] = await redis.zrange(leaderboardKey(difficulty), 0, 9)
-    const scores: ScoreEntry[] = members.map((m: string) => JSON.parse(m))
+    const members: unknown[] = await redis.zrange(leaderboardKey(difficulty), 0, 9)
+    const scores: ScoreEntry[] = (members ?? []).map(toEntry).filter(Boolean) as ScoreEntry[]
     return NextResponse.json({ scores })
-  } catch {
+  } catch (err) {
+    console.error("zrange error:", err)
     return NextResponse.json({ scores: [], error: "Failed to fetch scores" })
   }
 }
@@ -80,18 +92,20 @@ export async function POST(req: NextRequest) {
     date: new Date().toISOString(),
   }
 
-  // Lower score = better rank. Encode as moves * 100000 + seconds.
-  const score = moves * 100000 + seconds
+  // Lower score = better rank: fewest moves first, then fewest seconds as tiebreaker
+  const redisScore = moves * 100000 + seconds
 
   try {
+    // Store entry as plain object — @upstash/redis will serialize it
     await redis.zadd(leaderboardKey(difficulty as Difficulty), {
-      score,
-      member: JSON.stringify(entry),
+      score: redisScore,
+      member: entry,
     })
-    // Keep only top 50 entries
+    // Keep only top 50 entries per difficulty
     await redis.zremrangebyrank(leaderboardKey(difficulty as Difficulty), 50, -1)
     return NextResponse.json({ ok: true })
-  } catch {
+  } catch (err) {
+    console.error("zadd error:", err)
     return NextResponse.json({ error: "Failed to save score" }, { status: 500 })
   }
 }

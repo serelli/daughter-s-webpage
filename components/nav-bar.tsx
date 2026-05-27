@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { Sparkles, Moon, Sun, Menu, X, Puzzle, Shirt } from "lucide-react"
+import { Sparkles, Moon, Sun, Menu, X, Puzzle, Shirt, Flower2 } from "lucide-react"
 import { useTheme } from "next-themes"
 
 const navLinks = [
@@ -84,10 +84,17 @@ export function NavBar() {
             </Link>
             <Link
               href="/dress-up"
-              className="flex items-center gap-1.5 text-sm font-semibold px-3 py-1.5 rounded-full bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
+              className="flex items-center gap-1.5 text-sm font-semibold px-3 py-1.5 rounded-full hover:bg-primary/20 hover:text-primary text-muted-foreground transition-colors"
             >
               <Shirt className="w-4 h-4" />
               Dress-Up
+            </Link>
+            <Link
+              href="/bubble-pop"
+              className="flex items-center gap-1.5 text-sm font-semibold px-3 py-1.5 rounded-full bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
+            >
+              <Flower2 className="w-4 h-4" />
+              Flower Pop
             </Link>
           </div>
         </div>
@@ -153,6 +160,14 @@ export function NavBar() {
             >
               <Shirt className="w-4 h-4" />
               Dress-Up 👗
+            </Link>
+            <Link
+              href="/bubble-pop"
+              onClick={() => setMenuOpen(false)}
+              className="flex items-center gap-2 text-sm font-semibold text-primary py-2"
+            >
+              <Flower2 className="w-4 h-4" />
+              Flower Pop 🌸
             </Link>
           </div>
         </div>

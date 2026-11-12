@@ -1,19 +1,25 @@
 "use client"
 
-import { Cake, GraduationCap, Smile, Sparkles, BookOpen, Calculator } from "lucide-react"
+import { Cake, GraduationCap, Smile, Sparkles, BookOpen, Calculator, School } from "lucide-react"
 
 const facts = [
   {
     icon: Cake,
     label: "Age",
-    value: "7 years old!",
+    value: "8 years old!",
     emoji: "🎂",
   },
   {
     icon: GraduationCap,
     label: "Grade",
-    value: "1st Grade",
+    value: "2nd Grade",
     emoji: "🎒",
+  },
+  {
+    icon: School,
+    label: "School",
+    value: "Pleasant Glade Elementary",
+    emoji: "🏫",
   },
   {
     icon: Smile,
